@@ -1,0 +1,29 @@
+PROGRAM MinimalDemo;
+IMPORT "common/base.gqlr";
+DECLARE EDGE KEY TRANSFER.txId FUNCTIONAL;
+SETTINGS {
+  max_rounds: 10
+  shuffle: false
+}
+
+RULE suspicious_transfer MODE LOG PRIORITY 10 STRATUM 1 {
+  DECLARE GRAPH bank;
+  BODY:
+    MATCH (a:Account)-[t:TRANSFER]->(b:Account)
+    WHERE t.amount > 10000
+  HEAD:
+    MERGE (a)-[:SUSPICIOUS_TRANSFER]->(b)
+    RETURN count(*) AS changes
+}
+
+RULE ensure_transfer_metadata MODE IGNORE {
+  PRIORITY: 20
+  STRATUM: 2
+  BODY:
+    MATCH (a:Account)-[t:TRANSFER]->(b:Account)
+    WHERE t.currency = "EUR"
+  HEAD:
+    MERGE (a)-[x:TRANSFER_META {txId: t.txId}]->(b)
+    RETURN count(*) AS changes
+}
+

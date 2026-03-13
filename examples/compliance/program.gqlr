@@ -1,0 +1,39 @@
+PROGRAM CompliancePoC;
+DECLARE EDGE KEY TX.txId FUNCTIONAL;
+SETTINGS {
+  max_rounds: 30
+  shuffle: false
+}
+
+RULE high_value_transfer MODE LOG PRIORITY 10 STRATUM 1 {
+  BODY:
+    MATCH (a:DemoComplianceAccount)-[t:TX {demo: "compliance"}]->(b:DemoComplianceAccount)
+    WHERE t.amount >= 10000
+  HEAD:
+    OPTIONAL MATCH (a)-[existing:RISK_TRANSFER {demo: "compliance", txId: t.txId}]->(b)
+    WITH a, b, t, CASE WHEN existing IS NULL THEN 1 ELSE 0 END AS delta
+    MERGE (a)-[:RISK_TRANSFER {demo: "compliance", txId: t.txId}]->(b)
+    RETURN sum(delta) AS changes
+}
+
+RULE default_country MODE LOG PRIORITY 20 STRATUM 1 {
+  BODY:
+    MATCH (:DemoComplianceAccount)-[t:TX {demo: "compliance"}]->(:DemoComplianceAccount)
+    WHERE t.country IS NULL AND t.country_auto IS NULL
+  HEAD:
+    SET t.country_auto = "UNKNOWN"
+    RETURN count(*) AS changes
+}
+
+RULE frequent_receiver MODE LOG PRIORITY 30 STRATUM 2 {
+  BODY:
+    MATCH (a:DemoComplianceAccount)-[t:TX {demo: "compliance"}]->(b:DemoComplianceAccount)
+    WITH a, b, count(t) AS tx_count
+    WHERE tx_count >= 2
+  HEAD:
+    OPTIONAL MATCH (a)-[existing:FREQUENT_RECEIVER {demo: "compliance"}]->(b)
+    WITH a, b, CASE WHEN existing IS NULL THEN 1 ELSE 0 END AS delta
+    MERGE (a)-[:FREQUENT_RECEIVER {demo: "compliance"}]->(b)
+    RETURN sum(delta) AS changes
+}
+

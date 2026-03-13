@@ -1,0 +1,59 @@
+# Virtual environments and local environment files
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.env
+.envrc
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.pyre/
+.pytype/
+.tox/
+.nox/
+.hypothesis/
+.cache
+
+# Coverage and test artifacts
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+nosetests.xml
+*.cover
+*.py.cover
+
+# Build and packaging artifacts
+build/
+dist/
+.eggs/
+*.egg
+*.egg-info/
+MANIFEST
+__pypackages__/
+
+# Documentation and notebook artifacts
+docs/_build/
+site/
+.ipynb_checkpoints/
+
+# Local generated outputs
+out/
+reports/
+
+# Logs
+*.log
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/

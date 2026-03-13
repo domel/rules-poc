@@ -1,0 +1,14 @@
+PROGRAM ModeRobustnessSTRICT;
+SETTINGS {
+  max_rounds: 5
+  shuffle: false
+}
+
+RULE dirty_division MODE STRICT {
+  BODY:
+    MATCH (n:DemoModeInput {demo: "mode_robustness", id: "bad"})
+    WHERE n.den = 0
+  HEAD:
+    RETURN 1 / n.den AS changes
+}
+

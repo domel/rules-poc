@@ -1,0 +1,7 @@
+RULE missing_mode {
+  BODY:
+    MATCH (n)
+  HEAD:
+    RETURN 0 AS changes
+}
+

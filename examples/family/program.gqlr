@@ -1,0 +1,38 @@
+PROGRAM FamilyPoC;
+SETTINGS {
+  max_rounds: 30
+  shuffle: false
+}
+
+RULE child_of_from_parent MODE LOG PRIORITY 10 STRATUM 1 {
+  BODY:
+    MATCH (p:DemoFamilyPerson)-[:PARENT_OF {demo: "family"}]->(c:DemoFamilyPerson)
+  HEAD:
+    OPTIONAL MATCH (c)-[existing:CHILD_OF {demo: "family"}]->(p)
+    WITH c, p, CASE WHEN existing IS NULL THEN 1 ELSE 0 END AS delta
+    MERGE (c)-[:CHILD_OF {demo: "family"}]->(p)
+    RETURN sum(delta) AS changes
+}
+
+RULE descended_base MODE LOG PRIORITY 20 STRATUM 1 {
+  BODY:
+    MATCH (x:DemoFamilyPerson)-[:CHILD_OF {demo: "family"}]->(y:DemoFamilyPerson)
+  HEAD:
+    OPTIONAL MATCH (x)-[existing:DESCENDED_FROM {demo: "family"}]->(y)
+    WITH x, y, CASE WHEN existing IS NULL THEN 1 ELSE 0 END AS delta
+    MERGE (x)-[:DESCENDED_FROM {demo: "family"}]->(y)
+    RETURN sum(delta) AS changes
+}
+
+RULE descended_recursive MODE LOG PRIORITY 30 STRATUM 2 {
+  BODY:
+    MATCH (x:DemoFamilyPerson)-[:CHILD_OF {demo: "family"}]->(z:DemoFamilyPerson),
+          (z)-[:DESCENDED_FROM {demo: "family"}]->(y:DemoFamilyPerson)
+    WHERE x <> y
+  HEAD:
+    OPTIONAL MATCH (x)-[existing:DESCENDED_FROM {demo: "family"}]->(y)
+    WITH x, y, CASE WHEN existing IS NULL THEN 1 ELSE 0 END AS delta
+    MERGE (x)-[:DESCENDED_FROM {demo: "family"}]->(y)
+    RETURN sum(delta) AS changes
+}
+

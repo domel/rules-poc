@@ -1,0 +1,6 @@
+RULE missing_head MODE LOG {
+  BODY:
+    MATCH (n)
+    RETURN count(n) AS changes
+}
+

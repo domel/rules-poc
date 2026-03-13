@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gqlrules-poc"
+version = "0.1.0"
+description = "Wrapper-only parser for GQL Rules PoC"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "neo4j>=5,<6",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7,<9",
+]
+
+[project.scripts]
+gqlr = "gqlrules.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+markers = [
+  "integration: tests requiring a live Neo4j instance",
+]

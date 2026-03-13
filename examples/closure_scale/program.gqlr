@@ -1,0 +1,28 @@
+PROGRAM ClosureScalePoC;
+SETTINGS {
+  max_rounds: 200
+  shuffle: false
+}
+
+RULE reaches_base MODE LOG PRIORITY 10 STRATUM 1 {
+  BODY:
+    MATCH (x:DemoScaleNode)-[:NEXT {demo: "closure_scale"}]->(y:DemoScaleNode)
+  HEAD:
+    OPTIONAL MATCH (x)-[existing:REACHES {demo: "closure_scale"}]->(y)
+    WITH x, y, CASE WHEN existing IS NULL THEN 1 ELSE 0 END AS delta
+    MERGE (x)-[:REACHES {demo: "closure_scale"}]->(y)
+    RETURN sum(delta) AS changes
+}
+
+RULE reaches_recursive MODE LOG PRIORITY 20 STRATUM 2 {
+  BODY:
+    MATCH (x:DemoScaleNode)-[:REACHES {demo: "closure_scale"}]->(z:DemoScaleNode),
+          (z)-[:NEXT {demo: "closure_scale"}]->(y:DemoScaleNode)
+    WHERE x <> y
+  HEAD:
+    OPTIONAL MATCH (x)-[existing:REACHES {demo: "closure_scale"}]->(y)
+    WITH x, y, CASE WHEN existing IS NULL THEN 1 ELSE 0 END AS delta
+    MERGE (x)-[:REACHES {demo: "closure_scale"}]->(y)
+    RETURN sum(delta) AS changes
+}
+

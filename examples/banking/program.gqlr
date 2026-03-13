@@ -1,0 +1,43 @@
+PROGRAM BankingPoC;
+DECLARE EDGE KEY TRANSFER.txId FUNCTIONAL;
+SETTINGS {
+  max_rounds: 50
+  shuffle: false
+}
+
+RULE suspicious_transfer MODE LOG PRIORITY 10 STRATUM 1 {
+  BODY:
+    MATCH (a:DemoBankingAccount)-[t:TRANSFER]->(b:DemoBankingAccount)
+    WHERE t.demo = "banking" AND t.currency = "EUR" AND t.amount > 10000
+  HEAD:
+    OPTIONAL MATCH (a)-[existing:SUSPICIOUS_TRANSFER {demo: "banking"}]->(b)
+    WITH a, b, CASE WHEN existing IS NULL THEN 1 ELSE 0 END AS delta
+    MERGE (a)-[:SUSPICIOUS_TRANSFER {demo: "banking"}]->(b)
+    RETURN sum(delta) AS changes
+}
+
+RULE ensure_transfer_metadata MODE LOG PRIORITY 20 STRATUM 1 {
+  BODY:
+    MATCH (a:DemoBankingAccount {id: "A1"}), (b:DemoBankingAccount {id: "B7"})
+  HEAD:
+    MERGE (a)-[t:TRANSFER {txId: "TX-991", demo: "banking"}]->(b)
+    WITH t,
+         CASE WHEN t.createdAt IS NULL THEN 1 ELSE 0 END AS created_delta,
+         CASE WHEN "import-2026-01" IN coalesce(t.sources, []) THEN 0 ELSE 1 END AS source_delta
+    SET t.createdAt = coalesce(t.createdAt, timestamp()),
+        t.sources = CASE
+          WHEN "import-2026-01" IN coalesce(t.sources, [])
+          THEN coalesce(t.sources, [])
+          ELSE coalesce(t.sources, []) + ["import-2026-01"]
+        END
+    RETURN created_delta + source_delta AS changes
+}
+
+RULE default_fullname MODE LOG PRIORITY 30 STRATUM 2 {
+  BODY:
+    MATCH (p:DemoBankingPerson)
+    WHERE p.fullName IS NULL AND p.fullName_auto IS NULL
+  HEAD:
+    SET p.fullName_auto = "Unknown"
+    RETURN count(*) AS changes
+}
